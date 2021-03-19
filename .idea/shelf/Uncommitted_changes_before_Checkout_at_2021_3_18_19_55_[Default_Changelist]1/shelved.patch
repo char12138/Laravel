@@ -1,0 +1,101 @@
+Index: app/Providers/AppServiceProvider.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?php\r\n\r\nnamespace App\\Providers;\r\n\r\nuse Illuminate\\Support\\ServiceProvider;\r\n\r\nclass AppServiceProvider extends ServiceProvider\r\n{\r\n    /**\r\n     * Register any application services.\r\n     *\r\n     * @return void\r\n     */\r\n    public function register()\r\n    {\r\n        //\r\n    }\r\n\r\n    /**\r\n     * Bootstrap any application services.\r\n     *\r\n     * @return void\r\n     */\r\n    public function boot()\r\n    {\r\n        //\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/Providers/AppServiceProvider.php	(revision c1b05b7f7a19a9c3d35defb792a3b1ffb896548c)
++++ app/Providers/AppServiceProvider.php	(date 1616068526537)
+@@ -2,6 +2,10 @@
+ 
+ namespace App\Providers;
+ 
++use App\DI\Interfaces\Person;
++use App\DI\user;
++use Illuminate\Container\Container;
++use Illuminate\Support\Facades\App;
+ use Illuminate\Support\ServiceProvider;
+ 
+ class AppServiceProvider extends ServiceProvider
+@@ -14,6 +18,12 @@
+     public function register()
+     {
+         //
++//        $artisan = new user();
++//        App::instance('login-user',$artisan);
++        $container = Container::getInstance();
++        $container->singleton(Person::class,function ($container){
++            return new user();
++        });
+     }
+ 
+     /**
+Index: app/Http/Controllers/Goodscontroller.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?php\r\n\r\nnamespace App\\Http\\Controllers;\r\n\r\nuse App\\Models\\Mysql;\r\nuse Illuminate\\Http\\Request;\r\nuse Illuminate\\Support\\Facades\\Auth;\r\nuse Illuminate\\Support\\Facades\\DB;\r\n\r\nclass Goodscontroller extends Controller\r\n{\r\n    public function __construct()\r\n    {\r\n        $this->middleware('loginstatus');\r\n    }\r\n    //\r\n    public function list(Request $request){\r\n        $userId = $request->userId;\r\n        $user = DB::table('user')->where('userId',$userId)->get('userName');\r\n        $result = DB::table('goods')->where('userId',$userId)->get();\r\n        return view('goodsList',['rows'=>$result,'title'=>'Welcome '.$user[0]->userName.' to Mystore','userId'=>$userId]);\r\n    }\r\n\r\n    public function add($id,Request $request){\r\n        $goodsName = $request->goodsName;\r\n        $price = $request->price;\r\n        $goodsNum = $request->goodsNum;\r\n        $goodsIntro = $request->goodsIntro;\r\n\r\n        $file = $request->file('image');\r\n        $filename = $file->getClientOriginalName();\r\n        $file->storeAs('public',$filename);\r\n        $userId = $id;\r\n        $arr = ['goodsName'=>$goodsName,'price'=>$price,'goodsNum'=>$goodsNum,'goodsIntro'=>$goodsIntro,'image'=>$filename,'userId'=>$userId];\r\n        $result = DB::table('goods')->insert($arr);\r\n        if($result == false){\r\n            return redirect()->back()->withErrors(['添加失败']);\r\n        }else{\r\n            return redirect()->route('list',['userId'=>$userId]);\r\n        }\r\n    }\r\n\r\n    public function delate($goodsId){\r\n        $result = DB::table('goods')->where('goodsId',$goodsId)->delete();\r\n        if($result){\r\n            return redirect()->back();\r\n        }\r\n    }\r\n\r\n    public function altershow($goodsId){\r\n        $result = DB::table('goods')->where('goodsId',$goodsId)->get();\r\n        return view('goodsalter',['arr'=>$result[0]]);\r\n    }\r\n\r\n    public function alter(Request $request,$userId){\r\n        $goodsId = $request->goodsId;\r\n        $goodsName = $request->goodsName;\r\n        $price = $request->price;\r\n        $goodsNum = $request->goodsNum;\r\n        $goodsIntro = $request->goodsIntro;\r\n        $file = $request->file('image');\r\n        if($file){\r\n            $filename = $file->getClientOriginalName();\r\n            $file->storeAs('public',$filename);\r\n            $arr = ['goodsName'=>$goodsName,'price'=>$price,'goodsNum'=>$goodsNum,'goodsIntro'=>$goodsIntro,'image'=>$filename];\r\n        }else{\r\n            $arr = ['goodsName'=>$goodsName,'price'=>$price,'goodsNum'=>$goodsNum,'goodsIntro'=>$goodsIntro];\r\n        }\r\n        $result = DB::table('goods')->where('goodsId',$goodsId)->update($arr);\r\n        if($result){\r\n            return redirect()->route('list',['userId'=>$userId]);\r\n        }else{\r\n            return redirect()->back();\r\n        }\r\n    }\r\n\r\n    public function search(Request $request){\r\n        $goodsName = $request->goodsName;\r\n        $userId = $request->userId;\r\n        if($goodsName != null){\r\n            $result = DB::table('goods')->where('goodsName',$goodsName)->get();\r\n            return view('goodsList',['rows'=>$result,'title'=>'Search for '.$goodsName,'userId'=>$userId]);\r\n        }else{\r\n            return redirect()->route('list',['userId'=>$userId]);\r\n        }\r\n\r\n    }\r\n\r\n    public function back(){\r\n        return redirect()->back();\r\n    }\r\n}\r\n
+===================================================================
+--- app/Http/Controllers/Goodscontroller.php	(revision c1b05b7f7a19a9c3d35defb792a3b1ffb896548c)
++++ app/Http/Controllers/Goodscontroller.php	(date 1616067776352)
+@@ -2,8 +2,10 @@
+ 
+ namespace App\Http\Controllers;
+ 
++use App\DI\Interfaces\Person;
+ use App\Models\Mysql;
+ use Illuminate\Http\Request;
++use Illuminate\Support\Facades\App;
+ use Illuminate\Support\Facades\Auth;
+ use Illuminate\Support\Facades\DB;
+ 
+@@ -15,6 +17,8 @@
+     }
+     //
+     public function list(Request $request){
++        $artisan = App::make(Person::class);
++//        var_dump($artisan);die();
+         $userId = $request->userId;
+         $user = DB::table('user')->where('userId',$userId)->get('userName');
+         $result = DB::table('goods')->where('userId',$userId)->get();
+Index: app/Http/Controllers/Usercontroller.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?php\r\n\r\nnamespace App\\Http\\Controllers;\r\n\r\nuse App\\Models\\Mysql;\r\nuse Illuminate\\Http\\Request;\r\nuse Illuminate\\Queue\\RedisQueue;\r\nuse Illuminate\\Support\\Facades\\DB;\r\n\r\nclass Usercontroller extends Controller\r\n{\r\n\r\n    public function register(Request $request){\r\n        $userName = $request->userName;\r\n        $userEmail = $request->userEmail;\r\n        $userSex = $request->userSex;\r\n        $password = $request->password;\r\n        $password2 = $request->password2;\r\n        if($password == $password2){\r\n            $result = DB::table('user')->where('userEmail',$userEmail)->get();\r\n            if ($result->count('userId') == 0){\r\n                $arr = ['userName'=>$userName,'userEmail'=>$userEmail,'userSex'=>$userSex,'password'=>$password];\r\n                $result = DB::table('user')->insert($arr);\r\n                if($result == false){\r\n                    return redirect()->back()->withErrors(['注册失败']);\r\n                }else{\r\n                    return redirect('/')->withErrors(['注册成功']);\r\n                }\r\n            }else{\r\n                return redirect()->back()->withErrors(['邮箱已被注册']);\r\n            }\r\n        }else{\r\n            return redirect()->back()->withErrors(['两次输入密码不一致，请重试']);\r\n        }\r\n    }\r\n\r\n    public function login(Request $request){\r\n        $userEmail = $request->userEmail;\r\n        $password = $request->password;\r\n        $result = DB::table('user')->where('userEmail',$userEmail)->get();\r\n        if($result->count('userId')==0){\r\n            return redirect('/')->withErrors(['邮箱未注册，请先进行注册邮箱']);\r\n        }else{\r\n            if($password == $result[0]->password){\r\n                $request->session()->push('logined',true);\r\n//                var_dump($request->session()->get('user'));die();\r\n                return redirect()->route('list',['userId'=>$result[0]->userId]);\r\n            }else{\r\n                return redirect('/')->withErrors(['密码错误']);\r\n            }\r\n        }\r\n    }\r\n\r\n    public function logout(Request $request){\r\n        $request->session()->forget('logined');\r\n        return redirect('/');\r\n    }\r\n}\r\n
+===================================================================
+--- app/Http/Controllers/Usercontroller.php	(revision c1b05b7f7a19a9c3d35defb792a3b1ffb896548c)
++++ app/Http/Controllers/Usercontroller.php	(date 1616068416964)
+@@ -2,9 +2,12 @@
+ 
+ namespace App\Http\Controllers;
+ 
++use App\DI\Interfaces\Person;
++use App\DI\user;
+ use App\Models\Mysql;
++use Illuminate\Foundation\Application;
+ use Illuminate\Http\Request;
+-use Illuminate\Queue\RedisQueue;
++use Illuminate\Support\Facades\App;
+ use Illuminate\Support\Facades\DB;
+ 
+ class Usercontroller extends Controller
+@@ -42,8 +45,18 @@
+             return redirect('/')->withErrors(['邮箱未注册，请先进行注册邮箱']);
+         }else{
+             if($password == $result[0]->password){
++//                $artisan = App::make(Person::class);
++//                $artisan->assign($result[0]);
++//                $artisan = new user($result[0]);
++//                App::singleton(Person::class,function ($container){
++//                    return new user();
++//                });
++                $artisan = App::make('login-user');
++//                $artisan->assign($result[0]);
++                var_dump($artisan);die();
++//                App::instance('loginuser',$artisan);
++//                Application::instance('login-user',$artisan);
+                 $request->session()->push('logined',true);
+-//                var_dump($request->session()->get('user'));die();
+                 return redirect()->route('list',['userId'=>$result[0]->userId]);
+             }else{
+                 return redirect('/')->withErrors(['密码错误']);
